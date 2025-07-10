@@ -106,3 +106,12 @@ OBJ/system_stm32f10x.o
 OBJ/usart.crf
 OBJ/usart.d
 OBJ/usart.o
+OBJ/ad.crf
+OBJ/ad.d
+OBJ/ad.o
+OBJ/fs800.crf
+OBJ/fs800.d
+OBJ/fs800.o
+USER/.vscode/c_cpp_properties.json
+USER/.vscode/keil-assistant.log
+USER/.vscode/uv4.log.lock
