@@ -19,8 +19,8 @@ int main(void)
 	ADCIOInit();  // ADC初始化
 	NVICInit();
 	TIM3Init(); // TIM3中断初始化
-	uart_init(9600);
-	uart2_init(9600); // 串口初始化
+	uart_init(115200);
+	uart2_init(115200); // 串口初始化
 
 	while (1)
 	{
