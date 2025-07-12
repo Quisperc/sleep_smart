@@ -121,3 +121,6 @@ OBJ/nvic.o
 OBJ/tim3.crf
 OBJ/tim3.d
 OBJ/tim3.o
+OBJ/dma.crf
+OBJ/dma.d
+OBJ/dma.o
