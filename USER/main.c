@@ -13,11 +13,11 @@ void Delay(u32 count)
 
 int main(void)
 {
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); // 分配中断分组
 	delay_init(); // 延时函数初始化
 	PWRInit();	  // 初始化电源管理
 	ADCIOInit();  // ADC初始化
-	NVICInit();
+	NVICInit();	// 中断管理器初始化
 	TIM3Init(); // TIM3中断初始化
 	uart_init(115200);
 	uart2_init(115200); // 串口初始化
@@ -27,6 +27,5 @@ int main(void)
 		GPIO_SetBits(GPIOA, GPIO_Pin_8);
 		delay_ms(200);
 		GPIO_ResetBits(GPIOA, GPIO_Pin_8);
-		USART_SendData(USART2, '3');
 	}
 }

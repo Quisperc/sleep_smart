@@ -174,8 +174,7 @@ void USART2_IRQHandler(void) // 串口2中断服务程序
 	{
 		Res = USART_ReceiveData(USART2); //(USART2->DR);	//读取接收到的数据
 		USART_SendData(USART2, Res);	 // 发送接收到的数据
-		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
-			; // 等待发送完成
+		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET); // 等待发送完成
 		USART_RX_BUF[USART_RX_STA & 0X3F] = Res;
 		USART_RX_STA++;
 		if (USART_RX_STA > 63)
