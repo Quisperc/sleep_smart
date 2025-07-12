@@ -1,5 +1,7 @@
 #include "stm32f10x.h"
 #include "TIM3.h"
+#include "AD.h"
+
 void TIM3Init(void)
 {
 	TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;				// 定义TIM3初始化结构体
@@ -27,6 +29,8 @@ void TIM3_IRQHandler(void)
 	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) // 检查 TIM3 更新中断发生与否
 	{
 		TIM_ClearITPendingBit(TIM3, TIM_IT_Update); // 清除 TIM3 更新中断标志
-		;
+
+		// 启动ADC转换
+		ADC_SoftwareStartConvCmd(ADC1, ENABLE);
 	}
 }

@@ -24,9 +24,9 @@ void _sys_exit(int x)
 // 重定义fputc函数
 int fputc(int ch, FILE *f)
 {
-	while ((USART2->SR & 0X40) == 0)
+	while ((USART1->SR & 0X40) == 0)
 		; // 循环发送,直到发送完毕
-	USART2->DR = (u8)ch;
+	USART1->DR = (u8)ch;
 	return ch;
 }
 #endif
@@ -69,7 +69,7 @@ void uart_init(u32 bound)
 	NVIC_Init(&NVIC_InitStructure);							  // 根据指定的参数初始化VIC寄存器
 
 	// USART 初始化设置
-	
+
 	USART_InitStructure.USART_BaudRate = bound;										// 串口波特率
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;						// 字长为8位数据格式
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;							// 一个停止位
@@ -174,10 +174,60 @@ void USART2_IRQHandler(void) // 串口2中断服务程序
 	{
 		Res = USART_ReceiveData(USART2); //(USART2->DR);	//读取接收到的数据
 		USART_SendData(USART2, Res);	 // 发送接收到的数据
-		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET); // 等待发送完成
+		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
+			; // 等待发送完成
 		USART_RX_BUF[USART_RX_STA & 0X3F] = Res;
 		USART_RX_STA++;
 		if (USART_RX_STA > 63)
 			USART_RX_STA = 0; // 接收数据错误,重新开始接收
+	}
+}
+
+// 发送单个字符
+void USART_SendChar(USART_TypeDef *USARTx, char c)
+{
+	USART_SendData(USARTx, (uint16_t)c);
+	while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET)
+		;
+}
+
+// 逐字符发送字符串
+void USART_SendString(USART_TypeDef *USARTx, const char *str)
+{
+	while (*str)
+	{
+		USART_SendChar(USARTx, *str);
+		str++;
+	}
+}
+
+// 将uint16_t数字转换为字符串并发送
+void USART_SendNumber(USART_TypeDef *USARTx, uint16_t num)
+{
+	char buffer[6]; // 最大65535，5位数字 + \0
+	int i = 0;
+
+	// 特殊情况0
+	if (num == 0)
+	{
+		// USART_SendData(USARTx, '0');
+		// while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET);
+		USART_SendChar(USARTx, '0');
+		return;
+	}
+
+	// 反向填充字符串
+	while (num > 0)
+	{
+		buffer[i++] = (num % 10) + '0';
+		num /= 10;
+	}
+
+	// 正向发送
+	while (i--)
+	{
+		// USART_SendData(USARTx, buffer[i]);
+		// while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET);
+		USART_SendChar(USARTx, buffer[i]);
 	}
 }
