@@ -1,6 +1,5 @@
 #include "stm32f10x.h"
 #include "AD.h"
-#include
 void ADCIOInit(void)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;

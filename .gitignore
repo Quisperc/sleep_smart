@@ -115,3 +115,9 @@ OBJ/fs800.o
 USER/.vscode/c_cpp_properties.json
 USER/.vscode/keil-assistant.log
 USER/.vscode/uv4.log.lock
+OBJ/nvic.crf
+OBJ/nvic.d
+OBJ/nvic.o
+OBJ/tim3.crf
+OBJ/tim3.d
+OBJ/tim3.o

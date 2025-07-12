@@ -2,24 +2,31 @@
 #include "fs800.h"
 #include "AD.h"
 #include "delay.h"
+#include "TIM3.h"
+#include "NVIC.h"
+#include "usart.h"
 void Delay(u32 count)
 {
 	u32 i = 0;
-	for (; i < count; i++)
-		;
+	for (; i < count; i++);
 }
 
 int main(void)
 {
-	delay_init();
-	PWRInit(); // 初始化电源管理
-	ADCIOInit();
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	delay_init(); // 延时函数初始化
+	PWRInit();	  // 初始化电源管理
+	ADCIOInit();  // ADC初始化
+	NVICInit();
+	TIM3Init(); // TIM3中断初始化
+	uart_init(9600);
+	uart2_init(9600); // 串口初始化
 
 	while (1)
 	{
-		GPIO_SetBits(GPIOA, GPIO_Pin_0);
+		GPIO_SetBits(GPIOA, GPIO_Pin_8);
 		delay_ms(200);
 		GPIO_ResetBits(GPIOA, GPIO_Pin_8);
-		GPIO_Init();
+		USART_SendData(USART2, '3');
 	}
 }
