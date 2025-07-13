@@ -187,8 +187,7 @@ void USART2_IRQHandler(void) // 串口2中断服务程序
 void USART_SendChar(USART_TypeDef *USARTx, char c)
 {
 	USART_SendData(USARTx, (uint16_t)c);
-	while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET)
-		;
+	while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET);
 }
 
 // 逐字符发送字符串

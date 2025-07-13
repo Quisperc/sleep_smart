@@ -3,7 +3,7 @@
 #include "stm32f10x.h"
 #include "findpeak.h"
 // 计算心率
-void Calculate(float *data, uint16_t *my_heart, float *my_breath);
+void Calculate(float *data, float *my_heart, float *my_breath);
 // 获取心率
 float get_heart(SFindPV *pFindPV, float *Sample);
 // 获取呼吸率

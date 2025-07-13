@@ -17,11 +17,11 @@ void Slide_Window(void);
 void Send_Invalid_Message(void);
 
 // 全局变量
-uint8_t slide_flag = 0;		   // 滑动窗口标志
-extern uint16_t slide_counter; // 滑动计数器（在DMA.c中中断计数）
-uint16_t data_buffer[ADC_NUM]; // 数据缓冲区
-uint16_t current_heart_rate = 100;	   // 心率
-int current_breath_rate = 0;   // 呼吸率
+uint8_t slide_flag = 0;			   // 滑动窗口标志
+extern uint16_t slide_counter;	   // 滑动计数器（在DMA.c中中断计数）
+uint16_t data_buffer[ADC_NUM];	   // 数据缓冲区
+float current_heart_rate = 100; // 心率
+int current_breath_rate = 0;	   // 呼吸率
 
 // 延时
 void Delay(u32 count)
@@ -70,31 +70,16 @@ int main(void)
 		{
 			// 复制数据到缓冲区
 			int i;
-			Send_Heart_Rate_To_PC(current_heart_rate);
-			for (i = 0; i < ADC_NUM; i++)
-			{
-				data_buffer[i] = p1[i];
-			}
+			if (slide_flag == 0)
+				for (i = 0; i < ADC_NUM; i++)
+				{
+					data_buffer[i] = p1[i];
+				}
 			// 计算心率
-			Calculate((float*)data_buffer, &current_heart_rate, (float*)current_breath_rate);
-			//current_heart_rate = (uint16_t)current_heart_rate;
-            Send_Heart_Rate_To_PC(current_heart_rate);
-			if (current_heart_rate > 0)
-			{
-				// 发送到计算机（串口2）和U7（串口1）
-				// printf("Heart Rate: %d BPM\r\n", current_heart_rate);
-				// Send_Heart_Rate_To_PC(current_heart_rate);
-				
-			}
-			else
-			{
-				// printf("Heart Rate: Invalid\r\n");
-				// Send_Invalid_Message();
-			}
-			Send_Heart_Rate_To_PC(current_heart_rate);
-
+			Calculate((float*)data_buffer, &current_heart_rate, (float *)current_breath_rate);
 			// 发送完整30秒数据
-			Send_Data_To_PC();
+			//Send_Data_To_PC();
+			Send_Heart_Rate_To_PC(current_heart_rate);
 
 			// 开始滑动窗口模式
 			slide_flag = 1;
@@ -164,12 +149,11 @@ void Send_Data_To_PC(void)
 
 	USART_SendString(USART2, "30SEC_COMPLETE_DATA_START\r\n");
 
-	for (i = 0; i < ADC_NUM; i++)
+	for (i = 0; i < 120; i++)
 	{
 		USART_SendNumber(USART2, data_buffer[i]); // 发送数字
 		USART_SendData(USART2, ',');			  // 分隔符
-		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
-			;
+		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);
 
 		if ((i + 1) % 10 == 0)
 		{
