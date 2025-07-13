@@ -322,7 +322,7 @@
             <wLevel>2</wLevel>
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
-            <uC99>0</uC99>
+            <uC99>1</uC99>
             <useXO>0</useXO>
             <v6Lang>3</v6Lang>
             <v6LangP>3</v6LangP>
@@ -450,9 +450,24 @@
               <FilePath>..\HARDWARE\TIM3.c</FilePath>
             </File>
             <File>
-              <FileName>NVIC.c</FileName>
+              <FileName>DMA.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\HARDWARE\NVIC.c</FilePath>
+              <FilePath>..\HARDWARE\DMA.c</FilePath>
+            </File>
+            <File>
+              <FileName>Calculate.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\Calculate.c</FilePath>
+            </File>
+            <File>
+              <FileName>Filter.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\Filter.c</FilePath>
+            </File>
+            <File>
+              <FileName>findpeak.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\findpeak.c</FilePath>
             </File>
           </Files>
         </Group>

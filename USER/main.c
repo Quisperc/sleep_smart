@@ -5,17 +5,23 @@
 #include "TIM3.h"
 #include "usart.h"
 #include "DMA.h"
+#include "Calculate.h"
 
+#define SLIDE_STEP 120 // 滑动窗口步长
 // 函数声明
 void Send_Data_To_PC(void);
 void Send_Heart_Rate_To_PC(int heart_rate);
 void Slide_Window(void);
 
+// 通过串口2发送无效消息
+void Send_Invalid_Message(void);
+
 // 全局变量
 uint8_t slide_flag = 0;		   // 滑动窗口标志
 extern uint16_t slide_counter; // 滑动计数器（在DMA.c中中断计数）
 uint16_t data_buffer[ADC_NUM]; // 数据缓冲区
-int current_heart_rate = 0;
+uint16_t current_heart_rate = 100;	   // 心率
+int current_breath_rate = 0;   // 呼吸率
 
 // 延时
 void Delay(u32 count)
@@ -35,12 +41,12 @@ int main(void)
 	uart_init(115200);
 	uart2_init(115200);
 
-	printf("Sliding Window Heart Rate Monitor System\r\n");
-	printf("Sampling Rate: 40Hz (25ms interval)\r\n");
-	printf("Heart Rate Filter: 0.66Hz-2.5Hz\r\n");
-	printf("Breathing Filter: 0.13Hz-0.53Hz\r\n");
-	printf("Initial Window: 30 seconds (1200 data points)\r\n");
-	printf("Slide Step: 3 seconds (120 data points)\r\n");
+	USART_SendString(USART2, "Sliding Window Heart Rate Monitor System\r\n");
+	USART_SendString(USART2, "Sampling Rate: 40Hz (25ms interval)\r\n");
+	USART_SendString(USART2, "Heart Rate Filter: 0.66Hz-2.5Hz\r\n");
+	USART_SendString(USART2, "Breathing Filter: 0.13Hz-0.53Hz\r\n");
+	USART_SendString(USART2, "Initial Window: 30 seconds (1200 data points)\r\n");
+	USART_SendString(USART2, "Slide Step: 3 seconds (120 data points)\r\n");
 
 	// 初始化ADC相关
 	ADCx_GPIO_Config();	 // ADC GPIO配置
@@ -50,14 +56,11 @@ int main(void)
 	DMAx_Mode_Config(); // DMA模式配置
 	DMAx_NVIC_Config(); // DMA中断配置
 
-	// 初始化滤波器
-	Filter_Init();
-
 	// 初始化定时器（25ms定时）
 	TIM3Init();
 
-	printf("System initialization completed\r\n");
-	printf("Waiting for initial 30-second data collection...\r\n");
+	USART_SendString(USART2, "System initialization completed\r\n");
+	USART_SendString(USART2, "Waiting for initial 30-second data collection...\r\n");
 
 	// 主循环
 	while (1)
@@ -67,23 +70,28 @@ int main(void)
 		{
 			// 复制数据到缓冲区
 			int i;
+			Send_Heart_Rate_To_PC(current_heart_rate);
 			for (i = 0; i < ADC_NUM; i++)
 			{
 				data_buffer[i] = p1[i];
 			}
-
 			// 计算心率
-			current_heart_rate = Calculate_Heart_Rate(data_buffer, ADC_NUM);
-
+			Calculate((float*)data_buffer, &current_heart_rate, (float*)current_breath_rate);
+			//current_heart_rate = (uint16_t)current_heart_rate;
+            Send_Heart_Rate_To_PC(current_heart_rate);
 			if (current_heart_rate > 0)
 			{
-				printf("Heart Rate: %d BPM\r\n", current_heart_rate);
-				Send_Heart_Rate_To_PC(current_heart_rate);
+				// 发送到计算机（串口2）和U7（串口1）
+				// printf("Heart Rate: %d BPM\r\n", current_heart_rate);
+				// Send_Heart_Rate_To_PC(current_heart_rate);
+				
 			}
 			else
 			{
-				printf("Heart Rate: Invalid\r\n");
+				// printf("Heart Rate: Invalid\r\n");
+				// Send_Invalid_Message();
 			}
+			Send_Heart_Rate_To_PC(current_heart_rate);
 
 			// 发送完整30秒数据
 			Send_Data_To_PC();
@@ -105,7 +113,7 @@ int main(void)
 				Slide_Window();
 
 				// 计算新的心率
-				current_heart_rate = Calculate_Heart_Rate(data_buffer, ADC_NUM);
+				// current_heart_rate = Calculate_Heart_Rate(data_buffer, ADC_NUM);
 				Send_Heart_Rate_To_PC(current_heart_rate);
 
 				slide_counter = 0;
@@ -130,7 +138,7 @@ void Slide_Window(void)
 		data_buffer[ADC_NUM - SLIDE_STEP + i] = p1[i];
 	}
 
-	printf("Window slided - added %d new data points\r\n", SLIDE_STEP);
+	USART_SendString(USART2, "Window slided - added 120 new data points\r\n");
 }
 
 // 通过串口2发送心率数据
@@ -138,6 +146,14 @@ void Send_Heart_Rate_To_PC(int heart_rate)
 {
 	char buffer[50];
 	sprintf(buffer, "HR:%d\r\n", heart_rate);
+	USART_SendString(USART2, buffer);
+}
+
+// 通过串口2发送无效消息
+void Send_Invalid_Message(void)
+{
+	char buffer[50];
+	sprintf(buffer, "Heart Rate: Invalid\r\n");
 	USART_SendString(USART2, buffer);
 }
 

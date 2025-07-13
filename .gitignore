@@ -124,3 +124,12 @@ OBJ/tim3.o
 OBJ/dma.crf
 OBJ/dma.d
 OBJ/dma.o
+OBJ/calculate.crf
+OBJ/calculate.d
+OBJ/calculate.o
+OBJ/filter.crf
+OBJ/filter.d
+OBJ/filter.o
+OBJ/findpeak.crf
+OBJ/findpeak.d
+OBJ/findpeak.o
