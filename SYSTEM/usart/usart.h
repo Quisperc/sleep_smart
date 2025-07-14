@@ -13,7 +13,6 @@ void uart_init(u32 bound);
 void uart2_init(u32 bound);
 
 // ¹¤¾ßº¯Êý
-void Send_Data_To_PC(void);
 void USART_SendString(USART_TypeDef *USARTx, const char *str);
 void USART_SendChar(USART_TypeDef *USARTx, char c);
 void USART_SendNumber(USART_TypeDef *USARTx, uint16_t num);

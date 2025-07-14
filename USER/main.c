@@ -5,23 +5,27 @@
 #include "TIM3.h"
 #include "usart.h"
 #include "DMA.h"
-#include "Calculate.h"
-
+#include "Filter.h"
+#include "findpeak.h"
+#define ADC_NUM 1200
 #define SLIDE_STEP 120 // 滑动窗口步长
-// 函数声明
-void Send_Data_To_PC(void);
-void Send_Heart_Rate_To_PC(int heart_rate);
-void Slide_Window(void);
-
-// 通过串口2发送无效消息
-void Send_Invalid_Message(void);
 
 // 全局变量
-uint8_t slide_flag = 0;			   // 滑动窗口标志
-extern uint16_t slide_counter;	   // 滑动计数器（在DMA.c中中断计数）
-uint16_t data_buffer[ADC_NUM];	   // 数据缓冲区
-float current_heart_rate = 100; // 心率
-int current_breath_rate = 0;	   // 呼吸率
+uint8_t slide_flag = 0;						// 滑动窗口标志
+extern uint16_t slide_counter;				// 滑动计数器（在DMA.c中中断计数）
+float data_buffer[ADC_NUM];					// 数据缓冲区
+float current_heart_rate = 0;				// 心率
+float current_breath_rate = 0;				// 呼吸率
+SFindPV stFindPV;							// 波峰波谷
+uint8_t count = 0;							// 波峰波谷计数
+float SignalFilter_heart[ADC_NUM] = {0.0};	// 滤波后的数据缓冲区
+float SignalFilter_breath[ADC_NUM] = {0.0}; // 滤波后的数据缓冲区
+
+// 函数声明
+void Send_Data_To_PC(int current_heart_rate, int current_breath_rate);
+void Slide_Window(void);
+// 通过串口2发送无效消息
+void Send_Invalid_Message(void);
 
 // 延时
 void Delay(u32 count)
@@ -76,10 +80,19 @@ int main(void)
 					data_buffer[i] = p1[i];
 				}
 			// 计算心率
-			Calculate((float*)data_buffer, &current_heart_rate, (float *)current_breath_rate);
-			// 发送完整30秒数据
-			//Send_Data_To_PC();
-			Send_Heart_Rate_To_PC(current_heart_rate);
+			// Calculate(data_buffer, &current_heart_rate, (float *)current_breath_rate);
+			Heart_filter(data_buffer, SignalFilter_heart);
+			initialFindPV(&stFindPV);
+			FindPV(&stFindPV, (float *)SignalFilter_heart);
+			current_heart_rate = get_heart(&stFindPV, SignalFilter_heart, &count);
+			// 计算呼吸率
+			Breath_filter(data_buffer, SignalFilter_breath);
+			initialFindPV(&stFindPV);
+			FindPV(&stFindPV, (float *)SignalFilter_breath);
+			current_breath_rate = get_breath(&stFindPV, SignalFilter_breath, &count);
+
+			// 发送心率和呼吸率
+			Send_Data_To_PC((int)current_heart_rate, (int)current_breath_rate);
 
 			// 开始滑动窗口模式
 			slide_flag = 1;
@@ -99,7 +112,7 @@ int main(void)
 
 				// 计算新的心率
 				// current_heart_rate = Calculate_Heart_Rate(data_buffer, ADC_NUM);
-				Send_Heart_Rate_To_PC(current_heart_rate);
+				Send_Data_To_PC(current_heart_rate, current_breath_rate);
 
 				slide_counter = 0;
 			}
@@ -127,10 +140,10 @@ void Slide_Window(void)
 }
 
 // 通过串口2发送心率数据
-void Send_Heart_Rate_To_PC(int heart_rate)
+void Send_Data_To_PC(int current_heart_rate, int current_breath_rate)
 {
 	char buffer[50];
-	sprintf(buffer, "HR:%d\r\n", heart_rate);
+	sprintf(buffer, "HR:%d\r\n,BR:%d\r\n", current_heart_rate, current_breath_rate);
 	USART_SendString(USART2, buffer);
 }
 
@@ -140,26 +153,4 @@ void Send_Invalid_Message(void)
 	char buffer[50];
 	sprintf(buffer, "Heart Rate: Invalid\r\n");
 	USART_SendString(USART2, buffer);
-}
-
-// 通过串口2发送完整30秒数据到计算机
-void Send_Data_To_PC(void)
-{
-	uint16_t i;
-
-	USART_SendString(USART2, "30SEC_COMPLETE_DATA_START\r\n");
-
-	for (i = 0; i < 120; i++)
-	{
-		USART_SendNumber(USART2, data_buffer[i]); // 发送数字
-		USART_SendData(USART2, ',');			  // 分隔符
-		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET);
-
-		if ((i + 1) % 10 == 0)
-		{
-			USART_SendString(USART2, "\r\n");
-		}
-	}
-
-	USART_SendString(USART2, "\r\n30SEC_COMPLETE_DATA_END\r\n");
 }

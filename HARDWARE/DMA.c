@@ -1,17 +1,13 @@
-#include "stm32f10x.h"
+
 #include "DMA.h"
 #include "math.h"
 
 // DMA相关变量定义
-uint16_t ADC_Data1[2];		// ADC数据缓冲区
-uint16_t p1[ADC_NUM];		// 温度数据缓冲区
+uint32_t ADC_Data1[2];		// ADC数据缓冲区
+float p1[ADC_NUM];		// 温度数据缓冲区
 uint16_t index1 = 0;		// 数据索引
 uint8_t do_flag = 0;		// 数据传输完成标志
 uint16_t slide_counter = 0; // 滑动计数器
-
-// 滤波器缓冲区
-float hr_filtered[ADC_NUM]; // 心率滤波后数据
-float br_filtered[ADC_NUM]; // 呼吸滤波后数据
 
 void DMAx_Mode_Config(void)
 {
@@ -53,7 +49,7 @@ void DMA1_Channel1_IRQHandler(void)
 	if (DMA_GetITStatus(DMA1_IT_TC1) != RESET)
 	{
 		DMA_ClearITPendingBit(DMA1_IT_TC1);
-		p1[index1] = ADC_Data1[0] * 0.806;
+		p1[index1] = (float)ADC_Data1[0] * 0.806;
 		index1++;
 		slide_counter++;
 		if (index1 >= ADC_NUM)

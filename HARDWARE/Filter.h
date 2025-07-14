@@ -1,11 +1,16 @@
-#ifndef _FILTER_H
-#define _FILTER_H
-// 外部变量
+#ifndef __FILTER_H__
+#define __FILTER_H__
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #define ADC_NUM 1200 // 30秒数据，40Hz采样率
 
-//void Breath_filter(float *SignalFilter,float *OriginalSignal);
-//void Heart_filter(float *SignalFilter,float *OriginalSignal);
+	void Heart_filter(float *OriginalSignal, float *SignalFilter);
+	void Breath_filter(float *OriginalSignal, float *SignalFilter);
 
-void Breath_filter(float *OriginalSignal);
-void Heart_filter(float *OriginalSignal);
+#ifdef __cplusplus
+}
+#endif
 #endif
