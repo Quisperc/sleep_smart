@@ -455,11 +455,6 @@
               <FilePath>..\HARDWARE\DMA.c</FilePath>
             </File>
             <File>
-              <FileName>Calculate.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\HARDWARE\Calculate.c</FilePath>
-            </File>
-            <File>
               <FileName>Filter.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\Filter.c</FilePath>

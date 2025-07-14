@@ -90,35 +90,38 @@ void USART1_IRQHandler(void) // 串口1中断服务程序
 	// #endif
 	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // 接收中断(接收到的数据必须是0x0d 0x0a结尾)
 	{
-		Res = USART_ReceiveData(USART1); // 读取接收到的数据
+		Res = USART_ReceiveData(USART1); // 读取串口1接收到的数据
 		USART_RX_BUF[USART_RX_STA & 0X3F] = Res;
-		printf("%d", Res);
 		USART_RX_STA++;
 		if (USART_RX_STA > 63)
 			USART_RX_STA = 0;
 		// 接收数据错误,重新开始接收
-		// if ((USART_RX_STA & 0x8000) == 0) // 接收未完成
-		// {
-		// 	if (USART_RX_STA & 0x4000) // 接收到了0x0d
-		// 	{
-		// 		if (Res != 0x0a)
-		// 			USART_RX_STA = 0; // 接收错误,重新开始
-		// 		else
-		// 			USART_RX_STA |= 0x8000; // 接收完成了
-		// 	}
-		// 	else // 还没收到0X0D
-		// 	{
-		// 		if (Res == 0x0d)
-		// 			USART_RX_STA |= 0x4000;
-		// 		else
-		// 		{
-		// 			USART_RX_BUF[USART_RX_STA & 0X3FFF] = Res;
-		// 			USART_RX_STA++;
-		// 			if (USART_RX_STA > (USART_REC_LEN - 1))
-		// 				USART_RX_STA = 0; // 接收数据错误,重新开始接收
-		// 		}
-		// 	}
-		// }
+		if ((USART_RX_STA & 0x8000) == 0) // 接收未完成
+		{
+			if (USART_RX_STA & 0x4000) // 接收到了0x0d
+			{
+				if (Res != 0x0a)
+					USART_RX_STA = 0; // 接收错误,重新开始
+				else
+				{
+					USART_RX_STA |= 0x8000; // 接收完成了
+					USART_SendData(USART2, (u16)USART_RX_BUF);
+					// USART_SendString(USART2, USART_RX_BUF); // 发送接收到的数据到串口2再到计算机
+				}
+			}
+			else // 还没收到0X0D
+			{
+				if (Res == 0x0d)
+					USART_RX_STA |= 0x4000;
+				else
+				{
+					USART_RX_BUF[USART_RX_STA & 0X3FFF] = Res;
+					USART_RX_STA++;
+					if (USART_RX_STA > (USART_REC_LEN - 1))
+						USART_RX_STA = 0; // 接收数据错误,重新开始接收
+				}
+			}
+		}
 	}
 	// #if SYSTEM_SUPPORT_OS // 如果SYSTEM_SUPPORT_OS为真，则需要支持OS.
 	// 	OSIntExit();
@@ -173,7 +176,7 @@ void USART2_IRQHandler(void) // 串口2中断服务程序
 	if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) // 接收中断(接收到的数据必须是0x0d 0x0a结尾)
 	{
 		Res = USART_ReceiveData(USART2); //(USART2->DR);	//读取接收到的数据
-		USART_SendData(USART2, Res);	 // 发送接收到的数据
+		USART_SendData(USART1, Res);	 // 发送接收到的数据
 		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
 			; // 等待发送完成
 		USART_RX_BUF[USART_RX_STA & 0X3F] = Res;

@@ -3,7 +3,7 @@
 #include "math.h"
 
 // DMA相关变量定义
-uint32_t ADC_value;				 // ADC数据缓冲区
+uint32_t ADC_value[2];			 // ADC数据缓冲区
 float adc_data[ADC_NUM] = {0.0}; // ADC数据缓冲区
 uint16_t index1 = 0;			 // 数据索引
 int head = 0;					 // 写入位置
@@ -51,7 +51,8 @@ void DMA1_Channel1_IRQHandler(void)
 		// adc_data[index1] = (float)ADC_value * 0.806;
 		// index1++;
 		// 采样数据转换为电压值
-		float sample = (float)ADC_value * 0.806f;
+		float sample = (float)ADC_value[0] * 0.806f;
+
 		// 添加样本进环形缓冲区
 		AddData(sample);
 		slide_counter++;

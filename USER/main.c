@@ -77,13 +77,13 @@ int main(void)
 			// 计算心率
 			Heart_filter(data_buffer, SignalFilter_heart);
 			initialFindPV(&stFindPV);
-			FindPV(&stFindPV, (float *)SignalFilter_heart);
+			FindPV(&stFindPV, SignalFilter_heart);
 			current_heart_rate = get_heart(&stFindPV, SignalFilter_heart, &count);
 
 			// 计算呼吸率
 			Breath_filter(data_buffer, SignalFilter_breath);
 			initialFindPV(&stFindPV);
-			FindPV(&stFindPV, (float *)SignalFilter_breath);
+			FindPV(&stFindPV, SignalFilter_breath);
 			current_breath_rate = get_breath(&stFindPV, SignalFilter_breath, &count);
 
 			// 发送结果
@@ -100,6 +100,7 @@ void Send_Data_To_PC(int current_heart_rate, int current_breath_rate)
 	char buffer[50];
 	sprintf(buffer, "HR:%d,BR:%d\r\n", current_heart_rate, current_breath_rate);
 	USART_SendString(USART2, buffer);
+	USART_SendString(USART1, buffer);
 }
 
 // 通过串口2发送无效消息
