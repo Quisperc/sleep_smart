@@ -84,48 +84,32 @@ void uart_init(u32 bound)
 
 void USART1_IRQHandler(void) // 串口1中断服务程序
 {
-	u8 Res;
-	// #if SYSTEM_SUPPORT_OS // 如果SYSTEM_SUPPORT_OS为真，则需要支持OS.
-	// 	OSIntEnter();
-	// #endif
-	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // 接收中断(接收到的数据必须是0x0d 0x0a结尾)
+	u16 Res;
+	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // 接收中断
 	{
-		Res = USART_ReceiveData(USART1); // 读取串口1接收到的数据
-		USART_RX_BUF[USART_RX_STA & 0X3F] = Res;
-		USART_RX_STA++;
-		if (USART_RX_STA > 63)
-			USART_RX_STA = 0;
-		// 接收数据错误,重新开始接收
-		if ((USART_RX_STA & 0x8000) == 0) // 接收未完成
+		Res = USART_ReceiveData(USART1); // 读取接收到的数据
+
+		if (USART_RX_STA < 200) // 防止越界
 		{
-			if (USART_RX_STA & 0x4000) // 接收到了0x0d
+			USART_RX_BUF[USART_RX_STA++] = Res;
+
+			// 如果接收到 '\n' 并且前一个字符是 '\r'，认为一帧接收完成
+			if (USART_RX_STA >= 2 &&
+				USART_RX_BUF[USART_RX_STA - 2] == '\r' &&
+				USART_RX_BUF[USART_RX_STA - 1] == '\n')
 			{
-				if (Res != 0x0a)
-					USART_RX_STA = 0; // 接收错误,重新开始
-				else
-				{
-					USART_RX_STA |= 0x8000; // 接收完成了
-					USART_SendData(USART2, (u16)USART_RX_BUF);
-					// USART_SendString(USART2, USART_RX_BUF); // 发送接收到的数据到串口2再到计算机
-				}
-			}
-			else // 还没收到0X0D
-			{
-				if (Res == 0x0d)
-					USART_RX_STA |= 0x4000;
-				else
-				{
-					USART_RX_BUF[USART_RX_STA & 0X3FFF] = Res;
-					USART_RX_STA++;
-					if (USART_RX_STA > (USART_REC_LEN - 1))
-						USART_RX_STA = 0; // 接收数据错误,重新开始接收
-				}
+				// 在此处可以封装处理完整的一帧数据
+				// 比如发送到USART2或者设置标志位供主程序处理
+				USART_SendString(USART2, USART_RX_BUF); // 示例：直接将完整数据回显
+
+				USART_RX_STA = 0; // 清空接收状态
 			}
 		}
+		else // 缓冲区溢出，重置
+		{
+			USART_RX_STA = 0;
+		}
 	}
-	// #if SYSTEM_SUPPORT_OS // 如果SYSTEM_SUPPORT_OS为真，则需要支持OS.
-	// 	OSIntExit();
-	// #endif
 }
 
 void uart2_init(u32 bound)
@@ -170,19 +154,33 @@ void uart2_init(u32 bound)
 }
 
 // #endif 与前面的#if匹配
-void USART2_IRQHandler(void) // 串口2中断服务程序
+void USART2_IRQHandler(void) // 串口1中断服务程序
 {
-	u8 Res;
-	if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) // 接收中断(接收到的数据必须是0x0d 0x0a结尾)
+	u16 Res;
+	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // 接收中断
 	{
-		Res = USART_ReceiveData(USART2); //(USART2->DR);	//读取接收到的数据
-		USART_SendData(USART1, Res);	 // 发送接收到的数据
-		while (USART_GetFlagStatus(USART2, USART_FLAG_TXE) == RESET)
-			; // 等待发送完成
-		USART_RX_BUF[USART_RX_STA & 0X3F] = Res;
-		USART_RX_STA++;
-		if (USART_RX_STA > 63)
-			USART_RX_STA = 0; // 接收数据错误,重新开始接收
+		Res = USART_ReceiveData(USART1); // 读取接收到的数据
+
+		if (USART_RX_STA < 200) // 防止越界
+		{
+			USART_RX_BUF[USART_RX_STA++] = Res;
+
+			// 如果接收到 '\n' 并且前一个字符是 '\r'，认为一帧接收完成
+			if (USART_RX_STA >= 2 &&
+				USART_RX_BUF[USART_RX_STA - 2] == '\r' &&
+				USART_RX_BUF[USART_RX_STA - 1] == '\n')
+			{
+				// 在此处可以封装处理完整的一帧数据
+				// 比如发送到USART2或者设置标志位供主程序处理
+				USART_SendString(USART1 USART_RX_BUF); // 示例：直接将完整数据回显
+
+				USART_RX_STA = 0; // 清空接收状态
+			}
+		}
+		else // 缓冲区溢出，重置
+		{
+			USART_RX_STA = 0;
+		}
 	}
 }
 

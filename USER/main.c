@@ -94,11 +94,11 @@ int main(void)
 	}
 }
 
-// 通过串口2发送心率数据
+// 发送心率数据给计算机和U7
 void Send_Data_To_PC(int current_heart_rate, int current_breath_rate)
 {
 	char buffer[50];
-	sprintf(buffer, "HR:%d,BR:%d\r\n", current_heart_rate, current_breath_rate);
+	sprintf(buffer, "%d|%d|E\r\n", current_heart_rate, current_breath_rate);
 	USART_SendString(USART2, buffer);
 	USART_SendString(USART1, buffer);
 }
