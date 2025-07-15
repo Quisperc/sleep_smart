@@ -4,6 +4,7 @@
 
 // DMA相关变量定义
 uint32_t ADC_value[2];			 // ADC数据缓冲区
+extern float data_buffer[ADC_NUM]; // 
 float adc_data[ADC_NUM] = {0.0}; // ADC数据缓冲区
 uint16_t index1 = 0;			 // 数据索引
 int head = 0;					 // 写入位置
@@ -65,6 +66,13 @@ void DMA1_Channel1_IRQHandler(void)
 		{
 			slide_ready = 1;
 			slide_counter = 0;
+
+			// 直接中断转存数据，避免主程序处理，GetWindow
+			int start = head % ADC_NUM;
+			for (int i = 0; i < ADC_NUM; i++)
+			{
+				data_buffer[i] = adc_data[(start + i) % ADC_NUM];
+			}
 		}
 	}
 }

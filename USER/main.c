@@ -72,7 +72,7 @@ int main(void)
 		if (slide_ready)
 		{
 			// 拷贝当前窗口数据
-			GetWindow(data_buffer, ADC_NUM);
+			// GetWindow(data_buffer, ADC_NUM);
 
 			// 计算心率
 			Heart_filter(data_buffer, SignalFilter_heart);
