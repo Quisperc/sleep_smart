@@ -84,7 +84,7 @@ void uart_init(u32 bound)
 
 void USART1_IRQHandler(void) // 串口1中断服务程序
 {
-	u16 Res;
+	u8 Res;
 	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // 接收中断
 	{
 		Res = USART_ReceiveData(USART1); // 读取接收到的数据
@@ -100,7 +100,7 @@ void USART1_IRQHandler(void) // 串口1中断服务程序
 			{
 				// 在此处可以封装处理完整的一帧数据
 				// 比如发送到USART2或者设置标志位供主程序处理
-				USART_SendString(USART2, USART_RX_BUF); // 示例：直接将完整数据回显
+				USART_OUT(USART2, USART_RX_BUF, sizeof(USART_RX_BUF)); // 示例：直接将完整数据回显
 
 				USART_RX_STA = 0; // 清空接收状态
 			}
@@ -156,10 +156,10 @@ void uart2_init(u32 bound)
 // #endif 与前面的#if匹配
 void USART2_IRQHandler(void) // 串口2中断服务程序
 {
-	u16 Res;
-	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // 接收中断
+	u8 Res;
+	if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) // 接收中断
 	{
-		Res = USART_ReceiveData(USART1); // 读取接收到的数据
+		Res = USART_ReceiveData(USART2); // 读取接收到的数据
 
 		if (USART_RX_STA < 200) // 防止越界
 		{
@@ -172,9 +172,26 @@ void USART2_IRQHandler(void) // 串口2中断服务程序
 			{
 				// 在此处可以封装处理完整的一帧数据
 				// 比如发送到USART2或者设置标志位供主程序处理
-				USART_SendString(USART1 USART_RX_BUF); // 示例：直接将完整数据回显
-
-				USART_RX_STA = 0; // 清空接收状态
+				// 配置4G模块 AD
+				if (USART_RX_BUF[0] == 0x41 && USART_RX_BUF[1] == 0x44)
+				{
+					// USART_OUT(USART1, USART_RX_BUF, sizeof(USART_RX_BUF)); // 直接将完整数据回显
+				}
+				// 获取设备ID AA
+				else if (USART_RX_BUF[0] == 0x41 && USART_RX_BUF[1] == 0x41)
+				{
+					for (int i = 0; i < DeviceIDLength; i++)
+						DeviceID[i] = USART_RX_BUF[2 + i];
+					// USART_OUT(USART1, USART_RX_BUF, sizeof(USART_RX_BUF)); // 直接将完整数据回显
+				}
+				// 发送时间 AE
+				else if (USART_RX_BUF[0] == 0x41 && USART_RX_BUF[1] == 0x45)
+				{
+					SendTime = (USART_RX_BUF[2] - '0') * 10 + (USART_RX_BUF[3] - '0');
+					// USART_OUT(USART1, USART_RX_BUF, sizeof(USART_RX_BUF)); // 直接将完整数据回显
+				}
+				USART_OUT(USART1, USART_RX_BUF, sizeof(USART_RX_BUF)); // 直接将完整数据回显
+				USART_RX_STA = 0;									   // 清空接收状态
 			}
 		}
 		else // 缓冲区溢出，重置
@@ -188,7 +205,8 @@ void USART2_IRQHandler(void) // 串口2中断服务程序
 void USART_SendChar(USART_TypeDef *USARTx, char c)
 {
 	USART_SendData(USARTx, (uint16_t)c);
-	while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET);
+	while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET)
+		;
 }
 
 // 逐字符发送字符串
@@ -201,6 +219,26 @@ void USART_SendString(USART_TypeDef *USARTx, const char *str)
 	}
 }
 
+void USART_SendUint(USART_TypeDef *USARTx, uint8_t *str)
+{
+	while (*str)
+	{
+		USART_SendData(USARTx, (uint16_t)*str);
+		while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET)
+			;
+		str++;
+	}
+}
+void USART_OUT(USART_TypeDef *USARTx, uint8_t *buf, uint8_t len)
+{
+	uint8_t i;
+	for (i = 0; i < len; i++)
+	{
+		USART_SendData(USARTx, (uint8_t)buf[i]);
+		while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET)
+			;
+	}
+}
 // 将uint16_t数字转换为字符串并发送
 void USART_SendNumber(USART_TypeDef *USARTx, uint16_t num)
 {

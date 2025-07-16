@@ -3,8 +3,9 @@
 #include "math.h"
 
 // DMA相关变量定义
-uint32_t ADC_value[2];			 // ADC数据缓冲区
-extern float data_buffer[ADC_NUM]; // 
+uint32_t ADC_value[2];			   // ADC数据缓冲区
+extern float data_buffer[ADC_NUM]; //
+extern uint8_t timecount;
 float adc_data[ADC_NUM] = {0.0}; // ADC数据缓冲区
 uint16_t index1 = 0;			 // 数据索引
 int head = 0;					 // 写入位置
@@ -62,6 +63,10 @@ void DMA1_Channel1_IRQHandler(void)
 		// 	do_flag = 1;
 		// }
 		// 初始采样阶段，满1200个后开始滑动处理
+		if (slide_counter % 40 == 0)
+		{
+			timecount++;
+		}
 		if (index1 >= ADC_NUM && slide_counter >= SLIDE_STEP)
 		{
 			slide_ready = 1;

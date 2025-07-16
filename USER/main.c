@@ -7,22 +7,35 @@
 #include "DMA.h"
 #include "Filter.h"
 #include "findpeak.h"
-#define ADC_NUM 1200   // 窗口大小（30秒 × 40Hz）
-#define SLIDE_STEP 120 // 滑动步长（3秒 × 40Hz）
+#define ADC_NUM 1200	  // 窗口大小（30秒 × 40Hz）
+#define SLIDE_STEP 120	  // 滑动步长（3秒 × 40Hz）
+#define DeviceIDLength 10 // 设备ID长度
 
 // 全局变量
-extern uint16_t slide_counter;				// 滑动计数器（在DMA.c中中断计数）
-float data_buffer[ADC_NUM];					// 数据缓冲区
-float current_heart_rate = 0;				// 心率
-float current_breath_rate = 0;				// 呼吸率
+extern uint16_t slide_counter; // 滑动计数器（在DMA.c中中断计数）
+uint8_t timecount = 0;		   // 时间计数
+float data_buffer[ADC_NUM];	   // 数据缓冲区
+// float current_heart_rate = 0;				// 心率
+// float current_breath_rate = 0;				// 呼吸率
 SFindPV stFindPV;							// 波峰波谷
 uint8_t count = 0;							// 波峰波谷计数
 float SignalFilter_heart[ADC_NUM] = {0.0};	// 滤波后的数据缓冲区
 float SignalFilter_breath[ADC_NUM] = {0.0}; // 滤波后的数据缓冲区
 extern int slide_ready;						// 滑动处理完成标志
+uint8_t DeviceID[DeviceIDLength] = {0};		// 设备ID
+uint8_t SendTime = 10;						// 发送报告时间间隔
+uint8_t report_data[120] = {0};				// 数据报告
+
+uint8_t heart_beat[3] = {0};  // 心率
+uint8_t breath_beat[3] = {0}; // 呼吸率
+	uint8_t heart_freq = 0, breath_freq = 0;
+	uint8_t pose_state = 0;
+uint8_t index2 = 0;			  // 心率、呼吸率索引
+uint8_t ready_flag = 0;		  // 心率、呼吸率数据准备标志
 
 // 函数声明
 void Send2Report(int current_heart_rate, int current_breath_rate);
+void refresh_data(void);
 
 // 延时
 void Delay(u32 count)
@@ -68,23 +81,24 @@ int main(void)
 	{
 		if (slide_ready)
 		{
+			refresh_data();
 			// 拷贝当前窗口数据
 			// GetWindow(data_buffer, ADC_NUM);
 
-			// 计算心率
-			Heart_filter(data_buffer, SignalFilter_heart);
-			initialFindPV(&stFindPV);
-			FindPV(&stFindPV, SignalFilter_heart);
-			current_heart_rate = get_heart(&stFindPV, SignalFilter_heart, &count);
+			// // 计算心率
+			// Heart_filter(data_buffer, SignalFilter_heart);
+			// initialFindPV(&stFindPV);
+			// FindPV(&stFindPV, SignalFilter_heart);
+			// current_heart_rate = get_heart(&stFindPV, SignalFilter_heart, &count);
 
-			// 计算呼吸率
-			Breath_filter(data_buffer, SignalFilter_breath);
-			initialFindPV(&stFindPV);
-			FindPV(&stFindPV, SignalFilter_breath);
-			current_breath_rate = get_breath(&stFindPV, SignalFilter_breath, &count);
+			// // 计算呼吸率
+			// Breath_filter(data_buffer, SignalFilter_breath);
+			// initialFindPV(&stFindPV);
+			// FindPV(&stFindPV, SignalFilter_breath);
+			// current_breath_rate = get_breath(&stFindPV, SignalFilter_breath, &count);
 
-			// 发送结果
-			Send2Report((int)current_heart_rate, (int)current_breath_rate);
+			// // 发送结果
+			// Send2Report((int)current_heart_rate, (int)current_breath_rate);
 
 			slide_ready = 0; // 重置处理标志
 		}
@@ -97,7 +111,6 @@ void Send2Report(int current_heart_rate, int current_breath_rate)
 	char buffer[50];
 	sprintf(buffer, "%d|%d|E\r\n", current_heart_rate, current_breath_rate);
 	USART_SendString(USART2, buffer);
-	USART_SendString(USART1, buffer);
 }
 
 // void refresh_data(void)
@@ -176,14 +189,6 @@ void Send2Report(int current_heart_rate, int current_breath_rate)
 
 void refresh_data(void)
 {
-	static uint8_t heart_beat[6] = {0};
-	static uint8_t breath_beat[6] = {0};
-	static uint8_t index2 = 0;
-	static uint8_t ready_flag = 0;
-	uint8_t heart_freq = 0, breath_freq = 0;
-	uint8_t pose_state = 0;
-	uint8_t ecc = 0;
-	char report_data[20] = {0}; // 简化版，原本是120字节
 	int i;
 
 	// 滤波
@@ -197,17 +202,19 @@ void refresh_data(void)
 	FindPV(&stFindPV, SignalFilter_breath);
 	breath_freq = (uint8_t)get_breath(&stFindPV, SignalFilter_breath, &count);
 
+	//Send2Report(heart_freq, breath_freq);
+
 	// 姿态判断（心率过快）
 	if (heart_freq > 39)
 	{
 		pose_state = 1;
 	}
 
-	// 平滑滤波（6次滑动窗口平均）
+	// 平滑滤波（3次滑动窗口平均）
 	heart_beat[index2] = heart_freq;
 	breath_beat[index2] = breath_freq;
 	index2++;
-	if (index2 >= 6)
+	if (index2 >= 3)
 	{
 		ready_flag = 1;
 		index2 = 0;
@@ -216,25 +223,45 @@ void refresh_data(void)
 	if (ready_flag)
 	{
 		uint16_t sum_heart = 0, sum_breath = 0;
-		for (i = 0; i < 6; i++)
+		for (i = 0; i < 3; i++)
 		{
 			sum_heart += heart_beat[i];
 			sum_breath += breath_beat[i];
 		}
-		heart_freq = sum_heart / 6;
-		breath_freq = sum_breath / 6;
+		heart_freq = sum_heart / 3;
+		breath_freq = sum_breath / 3;
+		//Send2Report(heart_freq, breath_freq);
 
-		// 报文构造（简版：帧头+数据+校验）
-		report_data[0] = 0xFD; // 帧头
-		report_data[1] = heart_freq;
-		report_data[2] = breath_freq;
-		report_data[3] = pose_state;
+		ready_flag = 0;
+
+		// 生成报文构造（帧头+数据+校验）
+		report_data[0] = 0x42; // 帧头 B
+		for (int i = 0; i < DeviceIDLength; i++)
+		{
+			report_data[1 + i] = DeviceID[i];
+		}
+		report_data[1 + DeviceIDLength] = 0x7C; // 间隔 |
+		report_data[1 + DeviceIDLength + 1] = heart_freq;
+		report_data[1 + DeviceIDLength + 2] = 0x7C; // 间隔 |
+		report_data[1 + DeviceIDLength + 3] = breath_freq;
+		report_data[1 + DeviceIDLength + 4] = 0x7C; // 间隔 |
+		report_data[1 + DeviceIDLength + 5] = pose_state;
+		report_data[1 + DeviceIDLength + 6] = 0x7C; // 间隔 |
+		report_data[1 + DeviceIDLength + 7] = 0x30; // 间隔 |
+		report_data[1 + DeviceIDLength + 8] = 0x7C; // 间隔 |
+		report_data[1 + DeviceIDLength + 9] = 0x45; // 帧尾 E
 
 		// 校验
-		ecc = report_data[0] ^ report_data[1] ^ report_data[2] ^ report_data[3];
-		report_data[4] = ecc;
+		report_data[1 + DeviceIDLength + 10] = '\r';
+		report_data[1 + DeviceIDLength + 11] = '\n';
+		report_data[1 + DeviceIDLength + 12] = '\0';
+	}
+	// 定时发送
 
-		// 发送
-		USART_OUT(USART1, (uint8_t *)report_data, 5);
+	if (timecount >= SendTime)
+	{
+		USART_OUT(USART1, report_data, DeviceIDLength + 14);
+		USART_OUT(USART2, report_data, DeviceIDLength + 14);
+		timecount = 0;
 	}
 }
