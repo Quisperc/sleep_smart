@@ -154,7 +154,7 @@ void uart2_init(u32 bound)
 }
 
 // #endif 与前面的#if匹配
-void USART2_IRQHandler(void) // 串口1中断服务程序
+void USART2_IRQHandler(void) // 串口2中断服务程序
 {
 	u16 Res;
 	if (USART_GetITStatus(USART1, USART_IT_RXNE) != RESET) // 接收中断
