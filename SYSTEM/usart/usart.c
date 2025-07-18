@@ -100,7 +100,7 @@ void USART1_IRQHandler(void) // 串口1中断服务程序
 			{
 				// 在此处可以封装处理完整的一帧数据
 				// 比如发送到USART2或者设置标志位供主程序处理
-				USART_OUT(USART2, USART_RX_BUF, sizeof(USART_RX_BUF)); 
+				USART_OUT(USART2, USART_RX_BUF, sizeof(USART_RX_BUF));
 
 				USART_RX_STA = 0; // 清空接收状态
 			}

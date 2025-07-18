@@ -141,7 +141,7 @@ void refresh_data(void)
 		}
 		heart_freq = sum_heart / 3;
 		breath_freq = sum_breath / 3;
-		//Send2Report(heart_freq, breath_freq);
+		// Send2Report(heart_freq, breath_freq);
 
 		ready_flag = 0;
 

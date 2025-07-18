@@ -2,6 +2,7 @@
 #include "findPeak.h"
 #include "stdint.h"
 #include "usart.h"
+#include <stdio.h> // 用于 qsort
 
 #define heart_max 600
 int SampleDiff[SAMPLE_MAX] = {0};
@@ -136,8 +137,9 @@ float get_heart(SFindPV *pFindPV, float *Sample, uint8_t *count)
     pFindPV->Pcnt = kk; // 更新有效峰值数量
 
     // 设置动态阈值门限，用于进一步筛选峰值
-    door_limit = avage * 0.95 + 67; // 经验公式，根据平均幅度调整
-
+    // door_limit = avage * 0.8 + 60; // 经验公式，根据平均幅度调整
+	door_limit = avage * 0.65 + 60; // 经验公式，根据平均幅度调整
+	
     // 第二阶段：使用动态阈值筛选峰值
     kk = 0;
     for (k = 0; k < pFindPV->Pcnt; k++)
@@ -242,7 +244,7 @@ float get_breath(SFindPV *pFindPV, float *Sample, uint8_t *count)
     pFindPV->Pcnt = kk; // 更新有效峰值数量
 
     // 设置动态阈值门限，用于进一步筛选峰值
-    door_limit = avage * 0.8 + 10; // 经验公式，根据平均幅度调整(呼吸信号通常较弱)，原本5
+    door_limit = avage * 0.7 + 10; // 经验公式，根据平均幅度调整(呼吸信号通常较弱)，原本5
 
     // 第二阶段：使用动态阈值筛选峰值
     kk = 0;
