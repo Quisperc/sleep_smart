@@ -2,7 +2,6 @@
 #include "DMA.h"
 #include "math.h"
 
-
 // DMA相关变量定义
 uint32_t ADC_value[2];		   // ADC数据缓冲区
 float data_sample[SLIDE_STEP]; // 滑动数据缓冲区
@@ -10,8 +9,8 @@ extern uint8_t timecount;
 float adc_data[ADC_NUM] = {0.0}; // ADC数据缓冲区
 uint16_t index1 = 0;			 // 数据索引
 int slide_ready = 0;			 // 达到滑动处理条件标志
-// uint8_t do_flag = 0;		// 数据传输完成标志
-uint16_t slide_counter = 0; // 滑动计数器
+uint8_t do_flag = 0;			 // 数据传输完成标志
+uint16_t slide_counter = 0;		 // 滑动计数器
 
 void DMAx_Mode_Config(void)
 {
@@ -52,13 +51,20 @@ void DMA1_Channel1_IRQHandler(void)
 		DMA_ClearITPendingBit(DMA1_IT_TC1);
 		// 采样数据转换为电压值
 		float sample = (float)ADC_value[0] * 0.806f;
-		data_sample[slide_counter++] = sample;
+
 		// 初始采样阶段，满1200个后开始滑动处理
 		if (slide_counter % 40 == 0)
 			timecount++;
 		if (index1 < ADC_NUM)
-			index1++;
-		if (index1 >= ADC_NUM && slide_counter >= SLIDE_STEP)
+		{
+			adc_data[index1++] = sample;
+		}
+		else
+		{
+			do_flag = 1;
+			data_sample[slide_counter++] = sample;
+		}
+		if (do_flag && slide_counter >= SLIDE_STEP)
 		{
 			slide_ready = 1;
 			slide_counter = 0;
