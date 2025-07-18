@@ -2,13 +2,13 @@
 #include "DMA.h"
 #include "math.h"
 
+
 // DMA相关变量定义
-uint32_t ADC_value[2];			   // ADC数据缓冲区
-extern float data_buffer[ADC_NUM]; //
+uint32_t ADC_value[2];		   // ADC数据缓冲区
+float data_sample[SLIDE_STEP]; // 滑动数据缓冲区
 extern uint8_t timecount;
 float adc_data[ADC_NUM] = {0.0}; // ADC数据缓冲区
 uint16_t index1 = 0;			 // 数据索引
-int head = 0;					 // 写入位置
 int slide_ready = 0;			 // 达到滑动处理条件标志
 // uint8_t do_flag = 0;		// 数据传输完成标志
 uint16_t slide_counter = 0; // 滑动计数器
@@ -50,54 +50,18 @@ void DMA1_Channel1_IRQHandler(void)
 	if (DMA_GetITStatus(DMA1_IT_TC1) != RESET)
 	{
 		DMA_ClearITPendingBit(DMA1_IT_TC1);
-		// adc_data[index1] = (float)ADC_value * 0.806;
-		// index1++;
 		// 采样数据转换为电压值
 		float sample = (float)ADC_value[0] * 0.806f;
-
-		// 添加样本进环形缓冲区
-		AddData(sample);
-		slide_counter++;
-		// if (index1 >= ADC_NUM)
-		// {
-		// 	do_flag = 1;
-		// }
+		data_sample[slide_counter++] = sample;
 		// 初始采样阶段，满1200个后开始滑动处理
 		if (slide_counter % 40 == 0)
-		{
 			timecount++;
-		}
+		if (index1 < ADC_NUM)
+			index1++;
 		if (index1 >= ADC_NUM && slide_counter >= SLIDE_STEP)
 		{
 			slide_ready = 1;
 			slide_counter = 0;
-
-			// 直接中断转存数据，避免主程序处理，GetWindow
-			int start = head % ADC_NUM;
-			for (int i = 0; i < ADC_NUM; i++)
-			{
-				data_buffer[i] = adc_data[(start + i) % ADC_NUM];
-			}
 		}
-	}
-}
-
-// 添加数据到环形缓冲区
-void AddData(float sample)
-{
-	adc_data[head] = sample;
-	head = (head + 1) % ADC_NUM;
-
-	if (index1 < ADC_NUM)
-		index1++;
-}
-
-// 获取环形缓冲区中的数据
-void GetWindow(float *output, int size)
-{
-	int start = (head - size + ADC_NUM) % ADC_NUM;
-	for (int i = 0; i < size; i++)
-	{
-		output[i] = adc_data[(start + i) % ADC_NUM];
 	}
 }

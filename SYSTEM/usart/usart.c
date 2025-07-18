@@ -100,7 +100,7 @@ void USART1_IRQHandler(void) // 串口1中断服务程序
 			{
 				// 在此处可以封装处理完整的一帧数据
 				// 比如发送到USART2或者设置标志位供主程序处理
-				USART_OUT(USART2, USART_RX_BUF, sizeof(USART_RX_BUF)); // 示例：直接将完整数据回显
+				USART_OUT(USART2, USART_RX_BUF, sizeof(USART_RX_BUF)); 
 
 				USART_RX_STA = 0; // 清空接收状态
 			}
@@ -248,8 +248,6 @@ void USART_SendNumber(USART_TypeDef *USARTx, uint16_t num)
 	// 特殊情况0
 	if (num == 0)
 	{
-		// USART_SendData(USARTx, '0');
-		// while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET);
 		USART_SendChar(USARTx, '0');
 		return;
 	}
@@ -264,8 +262,6 @@ void USART_SendNumber(USART_TypeDef *USARTx, uint16_t num)
 	// 正向发送
 	while (i--)
 	{
-		// USART_SendData(USARTx, buffer[i]);
-		// while (USART_GetFlagStatus(USARTx, USART_FLAG_TXE) == RESET);
 		USART_SendChar(USARTx, buffer[i]);
 	}
 }

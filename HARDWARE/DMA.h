@@ -6,6 +6,7 @@
 #define SLIDE_STEP 120 // 滑动步长（3秒 × 40Hz）
 // 外部变量声明
 extern uint32_t ADC_value[2];		// ADC数据缓冲区
+extern float data_sample[SLIDE_STEP]; // 滑动窗口
 extern float adc_data[ADC_NUM]; // 数据缓冲区
 extern uint16_t index1;			// 数据索引
 extern uint8_t do_flag;			// 数据传输完成标志

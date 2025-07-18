@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include "findPeak.h"
 #include "stdint.h"
+#include "usart.h"
 
-#define heart_max 150
+#define heart_max 600
 int SampleDiff[SAMPLE_MAX] = {0};
 int heart_peak[heart_max] = {0};
 int hx_peak[heart_max] = {0};
@@ -54,15 +55,6 @@ void FindPV(SFindPV *pFindPV, float *Sample)
         }
     }
 
-    /*for (i = 0; i < SAMPLE_MAX; i++)
-    {
-        //printf("diff[%d] = %d \t", i, SampleDiff[i]);
-        if ( ((i + 1) & 0x03) == 0)
-        {
-           // printf("\n");
-        }
-    }*/
-
     // step 2 :对相邻相等的点进行领边坡度处理
     for (i = 0; i < SAMPLE_MAX - 1; i++)
     {
@@ -92,15 +84,6 @@ void FindPV(SFindPV *pFindPV, float *Sample)
             }
         }
     }
-    // printf("\n");
-    /*  for (i = 0; i < SAMPLE_MAX; i++)
-      {
-          //printf("diff2[%d] = %d \t", i, SampleDiff[i]);
-          if ( ((i + 1) & 0x03) == 0)
-          {
-              //printf("\n");
-          }
-      }*/
     // step 3 :对相邻相等的点进行领边坡度处理
     for (i = 0; i < SAMPLE_MAX - 1; i++)
     {
@@ -115,15 +98,6 @@ void FindPV(SFindPV *pFindPV, float *Sample)
             pFindPV->Vcnt++;
         }
     }
-    /*for (i = 0; i < SAMPLE_MAX; i++)
-    {
-        //printf("pFindPV->Pos_Valley[%d] = %d \t", i, pFindPV->Pos_Valley[i]);
-        //printf("pFindPV->Pos_Peak[%d] = %d \t", i, pFindPV->Pos_Peak[i]);
-        if ( ((i + 1) & 0x01) == 0)
-        {
-            //printf("\n");
-        }
-    }*/
 }
 
 /**
@@ -268,7 +242,7 @@ float get_breath(SFindPV *pFindPV, float *Sample, uint8_t *count)
     pFindPV->Pcnt = kk; // 更新有效峰值数量
 
     // 设置动态阈值门限，用于进一步筛选峰值
-    door_limit = avage * 0.85 + 10; // 经验公式，根据平均幅度调整(呼吸信号通常较弱)
+    door_limit = avage * 0.8 + 10; // 经验公式，根据平均幅度调整(呼吸信号通常较弱)，原本5
 
     // 第二阶段：使用动态阈值筛选峰值
     kk = 0;
